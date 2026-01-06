@@ -10,6 +10,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // ページ読み込み時に保存された翻訳を適用（一度だけ実行）
 let restoreTranslationsScheduled = false;
+let currentUrl = window.location.href;
 
 function scheduleRestoreTranslations() {
   if (restoreTranslationsScheduled) {
@@ -32,6 +33,38 @@ if (document.readyState === 'loading') {
 
 // loadイベントでも実行（SPAの場合、ページ遷移時に再実行される可能性があるため）
 window.addEventListener('load', scheduleRestoreTranslations);
+
+// SPAのページ遷移を検知するためのURL監視
+function checkUrlChange() {
+  const newUrl = window.location.href;
+  if (newUrl !== currentUrl) {
+    currentUrl = newUrl;
+    restoreTranslationsScheduled = false;
+    scheduleRestoreTranslations();
+  }
+}
+
+// popstateイベント（ブラウザの戻る/進むボタン）
+window.addEventListener('popstate', () => {
+  setTimeout(checkUrlChange, 100);
+});
+
+// pushState/replaceStateを監視（SPAのルーティング）
+const originalPushState = history.pushState;
+const originalReplaceState = history.replaceState;
+
+history.pushState = function (...args) {
+  originalPushState.apply(history, args);
+  setTimeout(checkUrlChange, 100);
+};
+
+history.replaceState = function (...args) {
+  originalReplaceState.apply(history, args);
+  setTimeout(checkUrlChange, 100);
+};
+
+// 定期的にURL変更をチェック（フォールバック）
+setInterval(checkUrlChange, 1000);
 
 // ホバーモードの切り替え
 function toggleHoverMode() {
@@ -292,6 +325,7 @@ async function restoreTranslations() {
       console.warn('翻訳の復元に失敗:', selector, error);
     }
   }
+  currentUrl = url;
 }
 
 
