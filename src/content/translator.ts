@@ -39,7 +39,7 @@ export async function translateElement(element: HTMLElement): Promise<boolean> {
       await saveTranslation(element, response.translatedText, html);
     } else {
       element.innerHTML = originalHTML;
-      alert('翻訳に失敗しました: ' + response.error);
+      alert('翻訳に失敗しました: ' + (response.error || '不明なエラー'));
     }
   } catch (error) {
     element.innerHTML = originalHTML;
