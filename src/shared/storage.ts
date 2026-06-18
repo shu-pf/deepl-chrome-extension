@@ -1,4 +1,7 @@
 const API_KEY_STORAGE_KEY = 'deeplApiKey';
+const TRANSLATION_PROVIDER_KEY = 'translationProvider';
+
+export type TranslationProvider = 'deepl' | 'local';
 
 export interface TranslationEntry {
   translatedText: string;
@@ -40,4 +43,15 @@ export async function saveTranslationEntry(
 
 export async function clearTranslations(url: string): Promise<void> {
   await chrome.storage.local.remove([translationStorageKey(url)]);
+}
+
+export async function getTranslationProvider(): Promise<TranslationProvider> {
+  const result = await chrome.storage.local.get([TRANSLATION_PROVIDER_KEY]);
+  return result[TRANSLATION_PROVIDER_KEY] === 'local' ? 'local' : 'deepl';
+}
+
+export async function setTranslationProvider(
+  provider: TranslationProvider,
+): Promise<void> {
+  await chrome.storage.local.set({ [TRANSLATION_PROVIDER_KEY]: provider });
 }

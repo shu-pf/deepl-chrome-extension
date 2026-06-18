@@ -1,15 +1,22 @@
 import { requestTranslation } from '../shared/messages';
-import { getApiKey } from '../shared/storage';
+import { getApiKey, getTranslationProvider } from '../shared/storage';
+import { translateSegments } from './local-translator';
+import { applyTranslatedSegments, collectTextNodes } from './text-segments';
 import { applyTranslation, saveTranslation } from './translation-store';
 
-// 要素を翻訳して置き換える。APIキー未登録なら警告して false を返す（呼び出し側でホバーモードを無効化する）。
+// 要素を翻訳して置き換える。DeepL でAPIキー未登録なら警告して false を返す
+// （呼び出し側でホバーモードを無効化する）。それ以外は true を返す。
 export async function translateElement(element: HTMLElement): Promise<boolean> {
-  const apiKey = await getApiKey();
-  if (!apiKey) {
-    alert(
-      'APIキーが登録されていません。拡張機能のポップアップからAPIキーを登録してください。',
-    );
-    return false;
+  const provider = await getTranslationProvider();
+
+  if (provider === 'deepl') {
+    const apiKey = await getApiKey();
+    if (!apiKey) {
+      alert(
+        'APIキーが登録されていません。拡張機能のポップアップからAPIキーを登録してください。',
+      );
+      return false;
+    }
   }
 
   const textLength = (element.textContent || '').length;
@@ -27,22 +34,17 @@ export async function translateElement(element: HTMLElement): Promise<boolean> {
   element.style.outline = '';
   element.style.outlineOffset = '';
 
-  const html = element.outerHTML;
-  const originalHTML = element.innerHTML;
+  const originalInnerHtml = element.innerHTML;
 
   try {
     document.body.style.cursor = 'wait';
-    const response = await requestTranslation(html);
-
-    if (response.success) {
-      applyTranslation(element, response.translatedText, html);
-      await saveTranslation(element, response.translatedText, html);
+    if (provider === 'local') {
+      await translateLocal(element);
     } else {
-      element.innerHTML = originalHTML;
-      alert('翻訳に失敗しました: ' + (response.error || '不明なエラー'));
+      await translateDeepL(element);
     }
   } catch (error) {
-    element.innerHTML = originalHTML;
+    element.innerHTML = originalInnerHtml;
     alert(
       '翻訳に失敗しました: ' +
         (error instanceof Error ? error.message : String(error)),
@@ -53,4 +55,30 @@ export async function translateElement(element: HTMLElement): Promise<boolean> {
   }
 
   return true;
+}
+
+async function translateDeepL(element: HTMLElement): Promise<void> {
+  const html = element.outerHTML;
+  const response = await requestTranslation(html);
+  if (!response.success) {
+    throw new Error(response.error || '不明なエラー');
+  }
+  applyTranslation(element, response.translatedText, html);
+  await saveTranslation(element, response.translatedText, html);
+}
+
+async function translateLocal(element: HTMLElement): Promise<void> {
+  const originalHtml = element.outerHTML;
+  const nodes = collectTextNodes(element);
+  if (nodes.length === 0) {
+    return;
+  }
+  const segments = nodes.map((node) => node.nodeValue ?? '');
+  // Translator API はドキュメントコンテキスト＋ユーザー操作が必要なため、
+  // service worker ではなくこの content script 内で直接実行する。
+  const translated = await translateSegments(segments);
+  applyTranslatedSegments(nodes, translated);
+  const translatedHtml = element.innerHTML;
+  applyTranslation(element, translatedHtml, originalHtml);
+  await saveTranslation(element, translatedHtml, originalHtml);
 }

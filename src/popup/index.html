@@ -42,6 +42,15 @@
         outline: none;
         border-color: #0066cc;
       }
+      select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+        background: white;
+      }
       button {
         background-color: #0066cc;
         color: white;
@@ -88,12 +97,23 @@
   <body>
     <h1>DeepL API設定</h1>
     <div class="form-group">
+      <label for="provider">翻訳エンジン</label>
+      <select id="provider">
+        <option value="deepl">DeepL API</option>
+        <option value="local">ローカル翻訳（Chrome 組込み・無料）</option>
+      </select>
+    </div>
+    <div class="form-group" id="deeplSettings">
       <label for="apiKey">APIキー（Pro版）</label>
       <input
         type="password"
         id="apiKey"
         placeholder="DeepL APIキーを入力してください"
       />
+    </div>
+    <div class="info" id="localInfo" style="display: none">
+      <p>Chrome 138 以降が必要です。初回はモデルのダウンロードが発生します。</p>
+      <p>翻訳は端末内で行われ、外部サーバーには送信されません（無料）。</p>
     </div>
     <button id="saveButton">保存</button>
     <div id="status" class="status"></div>
