@@ -17,12 +17,14 @@ TypeScript + 明確なディレクトリ構成へ作り替え、読みやすく�
 ### 維持すべき既存挙動（受け入れ基準）
 
 **background（service worker）**
+
 1. `translate` メッセージ受信 → DeepL API (`https://api.deepl.com/v2/translate`, `target_lang: JA`, `tag_handling: html`, `tag_handling_version: v2`) を呼び、結果を返す。APIキー未登録時はエラー応答。
 2. `toggle-hover-mode` コマンド → アクティブタブへ `toggle-hover-mode` メッセージ送信。
 3. コンテキストメニュー「表示中のページの翻訳を解消する」(`clear-translations`) → 該当 URL のストレージキー削除 + タブをリロード。
 4. install / startup でコンテキストメニューを作成。
 
 **content**
+
 1. `toggle-hover-mode` メッセージ受信でホバーモード切替。
 2. 読込時に保存済み翻訳を復元（DOMContentLoaded / load、500ms 遅延、一度だけ実行）。
 3. ホバーモード: 要素ハイライト（青 outline）、ESC で解除、カーソル crosshair。
