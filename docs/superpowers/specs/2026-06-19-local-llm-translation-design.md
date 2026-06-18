@@ -23,23 +23,23 @@
 ```
 [content] translateElement
    ├─ provider = 'deepl' → outerHTML 送信 → [background] DeepL API（現状のまま）
-   └─ provider = 'local' → テキストノード走査 → segments[] 送信
-                              → [background] local-translator
+   └─ provider = 'local' → テキストノード走査
+                              → [content] local-translator
                                   ├ LanguageDetector で原言語検出
                                   ├ Translator(src→ja) 生成/キャッシュ
-                                  └ 各 segment 翻訳 → segments[] 返却
-                              → [content] ノードへ書戻し → 永続化
+                                  └ 各 segment 翻訳
+                              → ノードへ書戻し → 永続化
 ```
 
-Translator API / Language Detector API は **background（service worker）** で実行する。言語ペアごとの Translator インスタンスを background でキャッシュし、タブ/ページ横断で再利用する。
+Translator API / Language Detector API は **content script（ページの top-level Window コンテキスト）** で実行する。
 
-> 実装時の検証ポイント: Translator API / Language Detector API が extension service worker スコープで利用可能かを capability チェックで確認する。万一 service worker で未提供だった場合は、これらの API をホストする **offscreen document** を background から生成し、メッセージ経由でプロキシする方式に切り替える（次善策）。
+> 重要（実装で判明した制約）: Translator / Language Detector API は **service worker（Web Worker 相当）では動作しない**。各 worker に responsible document を確立できず Permissions Policy を確認できないため、`create()` が `Other generic failures occurred` で失敗する。加えて `Translator.create()` はモデルDL時に **user activation（ユーザー操作のジェスチャ）を必須**とする。本拡張の翻訳トリガは content script の `contextmenu` イベント（ユーザー操作）であり、ページの Window コンテキスト＋user activation の両方を満たすため、API は content script 内で直接実行する。background 経由のメッセージ往復は不要。
 
 ## コンポーネント設計
 
-### `src/background/local-translator.ts`（新規）
+### `src/content/local-translator.ts`（新規）
 
-Translator API のラッパ。
+Translator API のラッパ。Translator/Language Detector の実行コンテキスト制約（service worker 非対応・user activation 必須）のため content script 側に置く。
 
 - `detectSourceLanguage(sample: string): Promise<string>` — Language Detector API で原言語を検出。検出不能時はエラー。
 - `translateSegments(segments: string[]): Promise<string[]>` — 原言語を検出し、`Translator(source → 'ja')` を生成（言語ペアごとにインスタンスをキャッシュ）、各 segment を翻訳して同順の配列で返す。
@@ -59,14 +59,14 @@ Translator API のラッパ。
 - `provider === 'deepl'`: 既存経路（`outerHTML` を送信 → 翻訳済み HTML を受領 → `applyTranslation`）。**変更しない**。
 - `provider === 'local'`:
   1. `collectTextNodes(element)` でテキストノードを収集。
-  2. 収集テキスト配列を `{action:'translate-local', segments}` で background へ送信。
+  2. content script 内で `translateSegments(segments)` を直接呼ぶ（service worker へは送らない）。
   3. 返却された翻訳配列を `applyTranslatedSegments` で書き戻す。
   4. 変異後の `element.innerHTML` を `saveTranslation` で保存（復元は既存機構を流用し、プロバイダ間で永続化方式を統一）。
 - APIキー必須チェックは local では行わない（local は API キー不要）。
 
-### `src/background/index.ts`（変更）
+### `src/background/index.ts`（変更なし）
 
-新メッセージ `translate-local` のハンドラを追加。`local-translator.translateSegments` を呼び、結果またはエラーを返す。既存の `translate`（DeepL）ハンドラはそのまま。
+local 経路は content script 内で完結するため background への追加は不要。既存の `translate`（DeepL）ハンドラのみ。
 
 ### `src/shared/storage.ts`（変更）
 

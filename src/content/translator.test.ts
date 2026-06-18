@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { translateElement } from './translator';
 import { setTranslationProvider } from '../shared/storage';
 import * as messages from '../shared/messages';
+import * as localTranslator from './local-translator';
 
 beforeEach(() => {
   vi.restoreAllMocks();
@@ -19,12 +20,12 @@ function mountElement(html: string): HTMLElement {
 }
 
 describe('translateElement (local provider)', () => {
-  it('translates text nodes via requestLocalTranslation and preserves tags', async () => {
+  it('translates text nodes via translateSegments and preserves tags', async () => {
     await setTranslationProvider('local');
-    vi.spyOn(messages, 'requestLocalTranslation').mockResolvedValue({
-      success: true,
-      segments: ['こんにちは ', '世界'],
-    });
+    vi.spyOn(localTranslator, 'translateSegments').mockResolvedValue([
+      'こんにちは ',
+      '世界',
+    ]);
 
     const el = mountElement('<p>Hello <b>world</b></p>');
     const result = await translateElement(el);
@@ -36,10 +37,9 @@ describe('translateElement (local provider)', () => {
 
   it('restores original HTML and alerts on local failure', async () => {
     await setTranslationProvider('local');
-    vi.spyOn(messages, 'requestLocalTranslation').mockResolvedValue({
-      success: false,
-      error: 'モデルが利用できません',
-    });
+    vi.spyOn(localTranslator, 'translateSegments').mockRejectedValue(
+      new Error('モデルが利用できません'),
+    );
     const alertSpy = globalThis.alert as unknown as ReturnType<typeof vi.fn>;
 
     const el = mountElement('<p>Hello</p>');

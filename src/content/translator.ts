@@ -1,8 +1,6 @@
-import {
-  requestLocalTranslation,
-  requestTranslation,
-} from '../shared/messages';
+import { requestTranslation } from '../shared/messages';
 import { getApiKey, getTranslationProvider } from '../shared/storage';
+import { translateSegments } from './local-translator';
 import { applyTranslatedSegments, collectTextNodes } from './text-segments';
 import { applyTranslation, saveTranslation } from './translation-store';
 
@@ -76,11 +74,10 @@ async function translateLocal(element: HTMLElement): Promise<void> {
     return;
   }
   const segments = nodes.map((node) => node.nodeValue ?? '');
-  const response = await requestLocalTranslation(segments);
-  if (!response.success) {
-    throw new Error(response.error || '不明なエラー');
-  }
-  applyTranslatedSegments(nodes, response.segments);
+  // Translator API はドキュメントコンテキスト＋ユーザー操作が必要なため、
+  // service worker ではなくこの content script 内で直接実行する。
+  const translated = await translateSegments(segments);
+  applyTranslatedSegments(nodes, translated);
   const translatedHtml = element.innerHTML;
   applyTranslation(element, translatedHtml, originalHtml);
   await saveTranslation(element, translatedHtml, originalHtml);
