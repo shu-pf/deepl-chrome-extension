@@ -1,9 +1,11 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, type Mock } from 'vitest';
 import { requestLocalTranslation } from './messages';
+
+const sendMessageMock = chrome.runtime.sendMessage as unknown as Mock;
 
 describe('requestLocalTranslation', () => {
   it('sends a translate-local message and returns the response', async () => {
-    vi.mocked(chrome.runtime.sendMessage).mockResolvedValue({
+    sendMessageMock.mockResolvedValue({
       success: true,
       segments: ['訳1', '訳2'],
     });
@@ -18,7 +20,7 @@ describe('requestLocalTranslation', () => {
   });
 
   it('throws when there is no response', async () => {
-    vi.mocked(chrome.runtime.sendMessage).mockResolvedValue(undefined);
+    sendMessageMock.mockResolvedValue(undefined);
     await expect(requestLocalTranslation(['s1'])).rejects.toThrow(
       '翻訳サービスからの応答がありません',
     );
