@@ -23,26 +23,31 @@
 ### Task 1: vitest + happy-dom テスト基盤
 
 **Files:**
+
 - Modify: `package.json`（devDependencies, scripts）
 - Create: `vitest.config.ts`
 - Create: `test/setup.ts`
 - Create: `test/setup.smoke.test.ts`
 
 **Interfaces:**
+
 - Consumes: なし
 - Produces: グローバル `chrome.storage.local`（インメモリ）・`chrome.runtime.sendMessage`(vi.fn) のモック。各テスト前にストレージは自動クリアされる。
 
 - [ ] **Step 1: 依存を追加**
 
 Run:
+
 ```bash
 npm install -D vitest happy-dom
 ```
+
 Expected: `package.json` の devDependencies に `vitest` と `happy-dom` が追加される。
 
 - [ ] **Step 2: test スクリプトを追加**
 
 `package.json` の `scripts` に追加（既存行は保持）:
+
 ```json
     "test": "vitest run",
     "test:watch": "vitest"
@@ -51,6 +56,7 @@ Expected: `package.json` の devDependencies に `vitest` と `happy-dom` が追
 - [ ] **Step 3: vitest 設定を作成**
 
 Create `vitest.config.ts`:
+
 ```ts
 import { defineConfig } from 'vitest/config';
 
@@ -66,6 +72,7 @@ export default defineConfig({
 - [ ] **Step 4: chrome モックの setup を作成**
 
 Create `test/setup.ts`:
+
 ```ts
 import { beforeEach, vi } from 'vitest';
 
@@ -105,6 +112,7 @@ beforeEach(() => {
 - [ ] **Step 5: スモークテストを作成**
 
 Create `test/setup.smoke.test.ts`:
+
 ```ts
 import { describe, expect, it } from 'vitest';
 
@@ -128,6 +136,7 @@ describe('test harness', () => {
 - [ ] **Step 6: include を両ディレクトリ対応にする**
 
 `vitest.config.ts` の include を更新:
+
 ```ts
     include: ['src/**/*.test.ts', 'test/**/*.test.ts'],
 ```
@@ -149,10 +158,12 @@ git commit -m "test: add vitest + happy-dom test harness with chrome mock"
 ### Task 2: storage にプロバイダ設定を追加
 
 **Files:**
+
 - Modify: `src/shared/storage.ts`
 - Test: `src/shared/storage.test.ts`
 
 **Interfaces:**
+
 - Consumes: `chrome.storage.local`
 - Produces:
   - `type TranslationProvider = 'deepl' | 'local'`
@@ -162,12 +173,10 @@ git commit -m "test: add vitest + happy-dom test harness with chrome mock"
 - [ ] **Step 1: 失敗するテストを書く**
 
 Create `src/shared/storage.test.ts`:
+
 ```ts
 import { describe, expect, it } from 'vitest';
-import {
-  getTranslationProvider,
-  setTranslationProvider,
-} from './storage';
+import { getTranslationProvider, setTranslationProvider } from './storage';
 
 describe('translation provider setting', () => {
   it('defaults to deepl when unset', async () => {
@@ -194,6 +203,7 @@ Expected: FAIL（`getTranslationProvider` is not exported）。
 - [ ] **Step 3: 実装を追加**
 
 `src/shared/storage.ts` の先頭付近（`API_KEY_STORAGE_KEY` の下）に追加:
+
 ```ts
 const TRANSLATION_PROVIDER_KEY = 'translationProvider';
 
@@ -201,6 +211,7 @@ export type TranslationProvider = 'deepl' | 'local';
 ```
 
 同ファイル末尾に追加:
+
 ```ts
 export async function getTranslationProvider(): Promise<TranslationProvider> {
   const result = await chrome.storage.local.get([TRANSLATION_PROVIDER_KEY]);
@@ -231,10 +242,12 @@ git commit -m "feat: add translation provider setting to storage"
 ### Task 3: messages にローカル翻訳メッセージを追加
 
 **Files:**
+
 - Modify: `src/shared/messages.ts`
 - Test: `src/shared/messages.test.ts`
 
 **Interfaces:**
+
 - Consumes: `chrome.runtime.sendMessage`
 - Produces:
   - `Message` 型に `{ action: 'translate-local'; segments: string[] }` を追加
@@ -244,6 +257,7 @@ git commit -m "feat: add translation provider setting to storage"
 - [ ] **Step 1: 失敗するテストを書く**
 
 Create `src/shared/messages.test.ts`:
+
 ```ts
 import { describe, expect, it, vi } from 'vitest';
 import { requestLocalTranslation } from './messages';
@@ -281,6 +295,7 @@ Expected: FAIL（`requestLocalTranslation` is not exported）。
 - [ ] **Step 3: 実装を追加**
 
 `src/shared/messages.ts` の `Message` 型を更新:
+
 ```ts
 export type Message =
   | { action: 'translate'; html: string }
@@ -289,6 +304,7 @@ export type Message =
 ```
 
 同ファイル末尾に追加:
+
 ```ts
 export type LocalTranslateResponse =
   | { success: true; segments: string[] }
@@ -326,11 +342,13 @@ git commit -m "feat: add translate-local message and request helper"
 ### Task 4: Translator API ラッパ（local-translator）
 
 **Files:**
+
 - Create: `src/types/chrome-ai.d.ts`
 - Create: `src/background/local-translator.ts`
 - Test: `src/background/local-translator.test.ts`
 
 **Interfaces:**
+
 - Consumes: グローバル `Translator`, `LanguageDetector`（Chrome 組込み）
 - Produces:
   - `translateSegments(segments: string[]): Promise<string[]>` — 空配列はそのまま `[]`。原言語を検出し、`Translator(source→'ja')` で各 segment を順次翻訳して同順の配列を返す。原言語が `ja` の場合は入力をそのまま返す。
@@ -338,6 +356,7 @@ git commit -m "feat: add translate-local message and request helper"
 - [ ] **Step 1: AI グローバルの型宣言を作成**
 
 Create `src/types/chrome-ai.d.ts`:
+
 ```ts
 // Chrome 組込み AI（Translator / Language Detector）の最小型宣言。
 // 公式 d.ts が無いため、本拡張で使う範囲のみ宣言する。
@@ -381,6 +400,7 @@ declare const Translator: {
 - [ ] **Step 2: 失敗するテストを書く**
 
 Create `src/background/local-translator.test.ts`:
+
 ```ts
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { translateSegments } from './local-translator';
@@ -437,7 +457,9 @@ describe('translateSegments', () => {
 
   it('throws when the translator is unavailable', async () => {
     installMocks({ detected: 'en', translatorAvailability: 'unavailable' });
-    await expect(translateSegments(['Hello'])).rejects.toThrow(/利用できません/);
+    await expect(translateSegments(['Hello'])).rejects.toThrow(
+      /利用できません/,
+    );
   });
 
   it('throws a Chrome-version hint when Translator is undefined', async () => {
@@ -461,6 +483,7 @@ Expected: FAIL（`translateSegments` is not exported）。
 - [ ] **Step 4: 実装を追加**
 
 Create `src/background/local-translator.ts`:
+
 ```ts
 const TARGET_LANGUAGE = 'ja';
 
@@ -521,9 +544,7 @@ function getTranslator(sourceLanguage: string): Promise<TranslatorInstance> {
   return cached;
 }
 
-export async function translateSegments(
-  segments: string[],
-): Promise<string[]> {
+export async function translateSegments(segments: string[]): Promise<string[]> {
   if (segments.length === 0) return [];
 
   const sample = segments.join(' ').slice(0, 1000);
@@ -558,10 +579,12 @@ git commit -m "feat: add Translator API wrapper for on-device translation"
 ### Task 5: テキストノード走査ユーティリティ（text-segments）
 
 **Files:**
+
 - Create: `src/content/text-segments.ts`
 - Test: `src/content/text-segments.test.ts`
 
 **Interfaces:**
+
 - Consumes: DOM（`document.createTreeWalker`, `NodeFilter`）
 - Produces:
   - `collectTextNodes(element: HTMLElement): Text[]` — 空白のみ、`SCRIPT`/`STYLE`/`NOSCRIPT` 配下のノードは除外し、文書順で返す。
@@ -570,6 +593,7 @@ git commit -m "feat: add Translator API wrapper for on-device translation"
 - [ ] **Step 1: 失敗するテストを書く**
 
 Create `src/content/text-segments.test.ts`:
+
 ```ts
 import { describe, expect, it } from 'vitest';
 import { applyTranslatedSegments, collectTextNodes } from './text-segments';
@@ -621,6 +645,7 @@ Expected: FAIL（モジュール未作成）。
 - [ ] **Step 3: 実装を追加**
 
 Create `src/content/text-segments.ts`:
+
 ```ts
 const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT']);
 
@@ -680,16 +705,19 @@ git commit -m "feat: add text-node collection and rewrite utilities"
 ### Task 6: content の翻訳経路をプロバイダで分岐
 
 **Files:**
+
 - Modify: `src/content/translator.ts`（全面置換）
 - Test: `src/content/translator.test.ts`
 
 **Interfaces:**
+
 - Consumes: `getApiKey`, `getTranslationProvider`（storage）; `requestTranslation`, `requestLocalTranslation`（messages）; `collectTextNodes`, `applyTranslatedSegments`（text-segments）; `applyTranslation`, `saveTranslation`（translation-store）
 - Produces: `translateElement(element: HTMLElement): Promise<boolean>`（シグネチャ不変）
 
 - [ ] **Step 1: 失敗するテストを書く**
 
 Create `src/content/translator.test.ts`:
+
 ```ts
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { translateElement } from './translator';
@@ -767,8 +795,12 @@ Expected: FAIL（local 分岐が未実装）。
 - [ ] **Step 3: translator.ts を全面置換**
 
 Replace the entire contents of `src/content/translator.ts`:
+
 ```ts
-import { requestLocalTranslation, requestTranslation } from '../shared/messages';
+import {
+  requestLocalTranslation,
+  requestTranslation,
+} from '../shared/messages';
 import { getApiKey, getTranslationProvider } from '../shared/storage';
 import { applyTranslatedSegments, collectTextNodes } from './text-segments';
 import { applyTranslation, saveTranslation } from './translation-store';
@@ -878,15 +910,18 @@ git commit -m "feat: branch content translation by provider"
 ### Task 7: background に translate-local ハンドラを追加
 
 **Files:**
+
 - Modify: `src/background/index.ts`
 
 **Interfaces:**
+
 - Consumes: `translateSegments`（local-translator）, `Message`, `LocalTranslateResponse`, `TranslateResponse`（messages）
 - Produces: `translate-local` メッセージへの応答（`LocalTranslateResponse`）
 
 - [ ] **Step 1: index.ts を更新**
 
 `src/background/index.ts` の import に追加:
+
 ```ts
 import type {
   LocalTranslateResponse,
@@ -895,9 +930,11 @@ import type {
 } from '../shared/messages';
 import { translateSegments } from './local-translator';
 ```
+
 （既存の `import type { Message, TranslateResponse } from '../shared/messages';` は上記に置き換える。`getApiKey`・`translateText`・context-menu の import は維持。）
 
 `chrome.runtime.onMessage.addListener` を以下に置き換える:
+
 ```ts
 chrome.runtime.onMessage.addListener(
   (
@@ -972,55 +1009,62 @@ git commit -m "feat: handle translate-local in background worker"
 ### Task 8: popup にプロバイダ選択 UI を追加
 
 **Files:**
+
 - Modify: `src/popup/index.html`
 - Modify: `src/popup/popup.ts`
 
 **Interfaces:**
+
 - Consumes: `getApiKey`, `setApiKey`, `getTranslationProvider`, `setTranslationProvider`, `TranslationProvider`（storage）
 - Produces: なし（UI）
 
 - [ ] **Step 1: index.html にプロバイダ選択と local 情報を追加**
 
 `<body>` 内、`<h1>` の直後・最初の `.form-group`（APIキー）の前に追加:
+
 ```html
-    <div class="form-group">
-      <label for="provider">翻訳エンジン</label>
-      <select id="provider">
-        <option value="deepl">DeepL API</option>
-        <option value="local">ローカル翻訳（Chrome 組込み・無料）</option>
-      </select>
-    </div>
+<div class="form-group">
+  <label for="provider">翻訳エンジン</label>
+  <select id="provider">
+    <option value="deepl">DeepL API</option>
+    <option value="local">ローカル翻訳（Chrome 組込み・無料）</option>
+  </select>
+</div>
 ```
 
 APIキーの `.form-group`（`<label for="apiKey">` を含む div）を `id="deeplSettings"` でラップするため、その div に `id` を付与:
+
 ```html
-    <div class="form-group" id="deeplSettings">
+<div class="form-group" id="deeplSettings"></div>
 ```
 
 `<button id="saveButton">保存</button>` の前に local 用情報ブロックを追加:
+
 ```html
-    <div class="info" id="localInfo" style="display: none">
-      <p>Chrome 138 以降が必要です。初回はモデルのダウンロードが発生します。</p>
-      <p>翻訳は端末内で行われ、外部サーバーには送信されません（無料）。</p>
-    </div>
+<div class="info" id="localInfo" style="display: none">
+  <p>Chrome 138 以降が必要です。初回はモデルのダウンロードが発生します。</p>
+  <p>翻訳は端末内で行われ、外部サーバーには送信されません（無料）。</p>
+</div>
 ```
 
 `<select>` 用に既存 `<style>` 内へ追加（`input[type='text']` のルールの近く）:
+
 ```css
-      select {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-        box-sizing: border-box;
-        background: white;
-      }
+select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+  background: white;
+}
 ```
 
 - [ ] **Step 2: popup.ts を更新**
 
 Replace the entire contents of `src/popup/popup.ts`:
+
 ```ts
 import {
   getApiKey,
@@ -1134,6 +1178,7 @@ git commit -m "style: apply prettier formatting" || echo "no changes to commit"
 - [ ] **Step 4: Chrome 138+ 手動スモークテスト**
 
 `dist/` を `chrome://extensions`（デベロッパーモード）で読み込み、以下を確認:
+
 1. popup で「ローカル翻訳」を選択して保存 → APIキー欄が隠れ、local 情報が表示される。
 2. 英語のページで翻訳モード（Ctrl/Cmd+Shift+L）→ 要素ホバーで翻訳。初回はモデルDLの待ちが発生し得る。タグ構造が保持され、テキストが日本語化される。
 3. リロード後も翻訳が復元される。
@@ -1145,6 +1190,7 @@ git commit -m "style: apply prettier formatting" || echo "no changes to commit"
 ## Self-Review
 
 **Spec coverage:**
+
 - プロバイダ抽象 / 設定切替 → Task 2, 6, 8 ✅
 - Translator API + Language Detector(自動検出) + ja 固定 → Task 4 ✅
 - テキストノード走査でタグ保持 → Task 5, 6 ✅

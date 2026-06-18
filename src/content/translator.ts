@@ -1,4 +1,7 @@
-import { requestLocalTranslation, requestTranslation } from '../shared/messages';
+import {
+  requestLocalTranslation,
+  requestTranslation,
+} from '../shared/messages';
 import { getApiKey, getTranslationProvider } from '../shared/storage';
 import { applyTranslatedSegments, collectTextNodes } from './text-segments';
 import { applyTranslation, saveTranslation } from './translation-store';

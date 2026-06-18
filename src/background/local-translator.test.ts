@@ -57,7 +57,9 @@ describe('translateSegments', () => {
 
   it('throws when the translator is unavailable', async () => {
     installMocks({ detected: 'en', translatorAvailability: 'unavailable' });
-    await expect(translateSegments(['Hello'])).rejects.toThrow(/利用できません/);
+    await expect(translateSegments(['Hello'])).rejects.toThrow(
+      /利用できません/,
+    );
   });
 
   it('throws a Chrome-version hint when Translator is undefined', async () => {

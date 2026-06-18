@@ -38,6 +38,7 @@ Translator API / Language Detector API は **background（service worker）** �
 ## コンポーネント設計
 
 ### `src/background/local-translator.ts`（新規）
+
 Translator API のラッパ。
 
 - `detectSourceLanguage(sample: string): Promise<string>` — Language Detector API で原言語を検出。検出不能時はエラー。
@@ -45,12 +46,14 @@ Translator API のラッパ。
 - `availability()` の状態（`available` / `downloadable` / `downloading` / `unavailable`）を判定し、`unavailable` の場合は明確なエラーを投げる。`downloadable`/`downloading` の場合は `create()` のダウンロード進捗モニタで状態を通知する。
 
 ### `src/content/text-segments.ts`（新規）
+
 要素配下のテキストノードを扱うユーティリティ。
 
 - `collectTextNodes(element): { node: Text; text: string }[]` — TreeWalker で順序付きにテキストノードを収集。空白のみのノードは除外。`<script>` / `<style>` 配下は除外。
 - `applyTranslatedSegments(nodes, translated: string[]): void` — 同順の翻訳結果を各テキストノードへ代入。タグ構造は一切変更しない。
 
 ### `src/content/translator.ts`（変更）
+
 `translateElement` を provider 設定で分岐させる。
 
 - `provider === 'deepl'`: 既存経路（`outerHTML` を送信 → 翻訳済み HTML を受領 → `applyTranslation`）。**変更しない**。
@@ -62,19 +65,23 @@ Translator API のラッパ。
 - APIキー必須チェックは local では行わない（local は API キー不要）。
 
 ### `src/background/index.ts`（変更）
+
 新メッセージ `translate-local` のハンドラを追加。`local-translator.translateSegments` を呼び、結果またはエラーを返す。既存の `translate`（DeepL）ハンドラはそのまま。
 
 ### `src/shared/storage.ts`（変更）
+
 - `getTranslationProvider(): Promise<'deepl' | 'local'>` — 未設定時は `'deepl'`。
 - `setTranslationProvider(provider): Promise<void>`。
 - ストレージキー `translationProvider`。
 
 ### `src/shared/messages.ts`（変更）
+
 - メッセージ型に `{ action: 'translate-local'; segments: string[] }` を追加。
 - レスポンス型 `{ success: true; segments: string[] } | { success: false; error: string }`。
 - `requestLocalTranslation(segments): Promise<...>` ヘルパを追加。
 
 ### `src/popup/`（変更）
+
 - プロバイダ選択 UI（DeepL / ローカル翻訳）を追加。
 - DeepL 選択時のみ APIキー入力欄を表示。
 - ローカル選択時の注意書き: 「Chrome 138 以降が必要」「初回はモデルのダウンロードが発生」「無料・端末内処理」。
