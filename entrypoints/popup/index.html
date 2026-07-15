@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepL翻訳設定</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <h1>DeepL API設定</h1>
+  <div class="form-group">
+    <label for="apiKey">APIキー（Pro版）</label>
+    <input type="password" id="apiKey" placeholder="DeepL APIキーを入力してください">
+  </div>
+  <button id="saveButton">保存</button>
+  <div id="status" class="status"></div>
+  <div class="info">
+    <p>DeepL API Pro版のAPIキーが必要です。</p>
+    <p>ショートカット: Ctrl+Shift+L (Mac: Command+Shift+L) で翻訳モードを有効化できます。</p>
+  </div>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>
