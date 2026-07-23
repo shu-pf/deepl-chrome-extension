@@ -176,7 +176,16 @@ pnpm zip            # ストア提出用の zip を作成
 pnpm compile        # 型チェックのみ（tsc --noEmit）
 ```
 
-ビルド済みの拡張を手動で読み込む場合は、`chrome://extensions` → デベロッパーモード ON → 「パッケージ化されていない拡張機能を読み込む」で `.output/chrome-mv3/` を指定する。
+### ビルド済みの拡張を Chrome に読み込む
+
+1. `pnpm build` を実行する（`.output/chrome-mv3/` に出力される）
+2. Chrome で `chrome://extensions` を開く
+3. 右上の「デベロッパーモード」を ON にする
+4. 「パッケージ化されていない拡張機能を読み込む」をクリックし、`.output/chrome-mv3/` フォルダを選択する
+
+`.output` は隠しフォルダのため、macOS のファイル選択ダイアログには表示されない。`Cmd + Shift + .` で隠しファイルの表示を切り替えるか、`Cmd + Shift + G` でパスを直接入力して移動する。
+
+コードを変更した場合は `pnpm build` し直し、`chrome://extensions` の拡張カードにある更新（リロード）ボタンを押すと反映される。
 
 ## 必要な権限（wxt.config.ts）
 
