@@ -9,11 +9,19 @@ export interface ToggleHoverModeRequest {
   action: 'toggle-hover-mode';
 }
 
-export type ExtensionMessage = TranslateRequest | ToggleHoverModeRequest;
+export interface CheckApiKeyRequest {
+  action: 'check-api-key';
+}
+
+export type ExtensionMessage = TranslateRequest | ToggleHoverModeRequest | CheckApiKeyRequest;
 
 export type TranslateResponse =
   | { success: true; translatedText: string }
   | { success: false; error: string };
+
+export interface CheckApiKeyResponse {
+  hasApiKey: boolean;
+}
 
 export interface StoredTranslation {
   translatedText: string;

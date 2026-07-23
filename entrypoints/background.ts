@@ -1,4 +1,4 @@
-import type { ExtensionMessage, TranslateResponse } from '@/utils/messages';
+import type { CheckApiKeyResponse, ExtensionMessage, TranslateResponse } from '@/utils/messages';
 import { translationsStorageKey } from '@/utils/messages';
 
 interface DeepLTranslateResponse {
@@ -7,7 +7,12 @@ interface DeepLTranslateResponse {
 
 // DeepL API呼び出し関数
 async function translateText(text: string, apiKey: string): Promise<string> {
-  const response = await fetch('https://api.deepl.com/v2/translate', {
+  // Free版のAPIキーは末尾が ":fx" になる
+  const endpoint = apiKey.endsWith(':fx')
+    ? 'https://api-free.deepl.com/v2/translate'
+    : 'https://api.deepl.com/v2/translate';
+
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Authorization': `DeepL-Auth-Key ${apiKey}`,
@@ -57,6 +62,15 @@ export default defineBackground(() => {
             error: error instanceof Error ? error.message : String(error)
           } satisfies TranslateResponse);
         }
+      })();
+
+      return true; // 非同期レスポンスを許可
+    }
+
+    if (request.action === 'check-api-key') {
+      (async () => {
+        const result = await browser.storage.local.get(['deeplApiKey']);
+        sendResponse({ hasApiKey: Boolean(result.deeplApiKey) } satisfies CheckApiKeyResponse);
       })();
 
       return true; // 非同期レスポンスを許可

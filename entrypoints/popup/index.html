@@ -9,13 +9,16 @@
 <body>
   <h1>DeepL API設定</h1>
   <div class="form-group">
-    <label for="apiKey">APIキー（Pro版）</label>
+    <label for="apiKey">APIキー</label>
     <input type="password" id="apiKey" placeholder="DeepL APIキーを入力してください">
   </div>
   <button id="saveButton">保存</button>
   <div id="status" class="status"></div>
+  <div class="form-group">
+    <button id="clearTranslationsButton" class="secondary">保存した翻訳をすべて削除</button>
+  </div>
   <div class="info">
-    <p>DeepL API Pro版のAPIキーが必要です。</p>
+    <p>DeepL APIのAPIキーが必要です（Free / Pro 両対応）。</p>
     <p>ショートカット: Ctrl+Shift+L (Mac: Command+Shift+L) で翻訳モードを有効化できます。</p>
   </div>
   <script type="module" src="./main.ts"></script>

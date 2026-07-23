@@ -17,5 +17,8 @@
   "devDependencies": {
     "typescript": "^7.0.2",
     "wxt": "^0.20.27"
+  },
+  "dependencies": {
+    "dompurify": "^3.4.12"
   }
 }

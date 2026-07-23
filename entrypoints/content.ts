@@ -1,5 +1,9 @@
-import type { ExtensionMessage, PageTranslations, TranslateResponse } from '@/utils/messages';
+import DOMPurify from 'dompurify';
+import type { CheckApiKeyResponse, ExtensionMessage, PageTranslations, TranslateResponse } from '@/utils/messages';
 import { translationsStorageKey } from '@/utils/messages';
+
+const MAX_TRANSLATION_LENGTH = 10000;
+const TRANSLATION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30日
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -7,6 +11,41 @@ export default defineContentScript({
   main() {
     let hoverModeEnabled = false;
     let hoveredElement: HTMLElement | null = null;
+
+    // ページ内toast通知の表示
+    function showToast(message: string, type: 'error' | 'info') {
+      const toast = document.createElement('div');
+      toast.textContent = message;
+      toast.style.position = 'fixed';
+      toast.style.top = '16px';
+      toast.style.right = '16px';
+      toast.style.zIndex = '2147483647';
+      toast.style.maxWidth = '360px';
+      toast.style.padding = '12px 16px';
+      toast.style.borderRadius = '6px';
+      toast.style.fontSize = '14px';
+      toast.style.lineHeight = '1.5';
+      toast.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      toast.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+      toast.style.wordBreak = 'break-word';
+      toast.style.whiteSpace = 'pre-wrap';
+
+      if (type === 'error') {
+        toast.style.backgroundColor = '#f8d7da';
+        toast.style.color = '#721c24';
+        toast.style.border = '1px solid #f5c6cb';
+      } else {
+        toast.style.backgroundColor = '#d1ecf1';
+        toast.style.color = '#0c5460';
+        toast.style.border = '1px solid #bee5eb';
+      }
+
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 5000);
+    }
 
     // メッセージの検知（backgroundからのショートカットキー検知）
     browser.runtime.onMessage.addListener((message) => {
@@ -118,10 +157,13 @@ export default defineContentScript({
       const element = e.target;
       if (!(element instanceof HTMLElement)) return;
 
-      // APIキーの確認
-      const result = await browser.storage.local.get(['deeplApiKey']);
-      if (!result.deeplApiKey) {
-        alert('APIキーが登録されていません。拡張機能のポップアップからAPIキーを登録してください。');
+      // APIキーの確認（背景スクリプトに問い合わせる。キー自体はcontent scriptに渡さない）
+      const checkResponse = (await browser.runtime.sendMessage({
+        action: 'check-api-key'
+      } satisfies ExtensionMessage)) as CheckApiKeyResponse | undefined;
+
+      if (!checkResponse?.hasApiKey) {
+        showToast('APIキーが登録されていません。拡張機能のポップアップからAPIキーを登録してください。', 'error');
         disableHoverMode();
         return;
       }
@@ -130,16 +172,13 @@ export default defineContentScript({
       const textContent = element.textContent || '';
       const textLength = textContent.length;
 
-      // 10,000文字を超える場合は警告
-      if (textLength > 10000) {
-        const confirmed = confirm(
-          `翻訳対象の文字数が${textLength.toLocaleString()}文字です。\n` +
-          `10,000文字を超えていますが、翻訳を続行しますか？`
+      // 10,000文字を超える場合は翻訳を中止
+      if (textLength > MAX_TRANSLATION_LENGTH) {
+        showToast(
+          `翻訳対象が${textLength.toLocaleString()}文字あります。10,000文字を超えるため翻訳を中止しました。より小さい要素を選択してください`,
+          'error'
         );
-
-        if (!confirmed) {
-          return;
-        }
+        return;
       }
 
       // 翻訳実行前にoutlineを解除
@@ -166,8 +205,8 @@ export default defineContentScript({
         }
 
         if (response.success) {
-          // 翻訳結果で置き換え
-          element.innerHTML = response.translatedText;
+          // 翻訳結果で置き換え（DOMPurifyでサニタイズしてから反映）
+          element.innerHTML = DOMPurify.sanitize(response.translatedText);
           element.setAttribute('data-deepl-translated', 'true');
           element.setAttribute('data-deepl-original', html);
 
@@ -175,11 +214,11 @@ export default defineContentScript({
           await saveTranslation(element, response.translatedText, html);
         } else {
           element.innerHTML = originalHTML;
-          alert('翻訳に失敗しました: ' + (response.error || '不明なエラー'));
+          showToast('翻訳に失敗しました: ' + (response.error || '不明なエラー'), 'error');
         }
       } catch (error) {
         element.innerHTML = originalHTML;
-        alert('翻訳に失敗しました: ' + (error instanceof Error ? error.message : String(error)));
+        showToast('翻訳に失敗しました: ' + (error instanceof Error ? error.message : String(error)), 'error');
       } finally {
         // カーソルを元に戻す
         document.body.style.cursor = '';
@@ -270,18 +309,29 @@ export default defineContentScript({
       }
 
       const translations = result[storageKey] as PageTranslations;
+      const now = Date.now();
+      let hasExpired = false;
 
       for (const [selector, data] of Object.entries(translations)) {
+        // 30日より古いエントリは復元せず、ストレージからも削除する
+        if (now - data.timestamp > TRANSLATION_TTL_MS) {
+          delete translations[selector];
+          hasExpired = true;
+          continue;
+        }
+
         try {
           const element = document.querySelector(selector);
           if (element && !element.hasAttribute('data-deepl-translated')) {
+            const sanitized = DOMPurify.sanitize(data.translatedText);
+
             try {
               // innerHTMLを使用して翻訳を反映
-              element.innerHTML = data.translatedText;
+              element.innerHTML = sanitized;
             } catch {
               // innerHTMLでエラーが発生した場合（React管理下など）、textContentにフォールバック
               const tempDiv = document.createElement('div');
-              tempDiv.innerHTML = data.translatedText;
+              tempDiv.innerHTML = sanitized;
               element.textContent = tempDiv.textContent || '';
             }
 
@@ -290,6 +340,14 @@ export default defineContentScript({
           }
         } catch (error) {
           console.warn('翻訳の復元に失敗:', selector, error);
+        }
+      }
+
+      if (hasExpired) {
+        if (Object.keys(translations).length === 0) {
+          await browser.storage.local.remove([storageKey]);
+        } else {
+          await browser.storage.local.set({ [storageKey]: translations });
         }
       }
     }

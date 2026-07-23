@@ -1,14 +1,15 @@
-# DeepL Chrome Extension
+# Hover Translator for DeepL API
 
-DeepL API を使用して、ページの一部（ホバーで選択した要素）を翻訳する Chrome 拡張機能。
+DeepL API を使用して、ページの一部（ホバーで選択した要素）を翻訳する非公式のブラウザ拡張機能。
 [WXT](https://wxt.dev/) + TypeScript で構築されている。
 
 ## 機能
 
-- **ホバー翻訳モード**: `Cmd+Shift+L`（Mac）/ `Ctrl+Shift+L` でモードを ON/OFF。ホバーした要素が青枠でハイライトされ、右クリックでその要素を日本語に翻訳する。`ESC` でモード解除。
-- **翻訳の永続化**: 翻訳結果は URL ごとに保存され、次回ページを開いたときに自動で復元される。
-- **翻訳の解消**: ページ上で右クリック → コンテキストメニュー「表示中のページの翻訳を解消する」で、保存済み翻訳を削除してリロードする。
-- **API キー管理**: ツールバーの拡張機能アイコンをクリックして開くポップアップから DeepL API キーを登録する。
+- **ホバー翻訳モード**: `Cmd+Shift+L`（Mac）/ `Ctrl+Shift+L` でモードを ON/OFF。ホバーした要素が青枠でハイライトされ、右クリックでその要素を日本語に翻訳する。`ESC` でモード解除。10,000 文字を超える要素は誤操作による API 消費を防ぐため翻訳を中止する。
+- **翻訳の永続化**: 翻訳結果は URL ごとに保存され、次回ページを開いたときに自動で復元される。保存から 30 日を過ぎたデータは復元時に自動削除される。
+- **翻訳の解消**: ページ上で右クリック → コンテキストメニュー「表示中のページの翻訳を解消する」で、保存済み翻訳を削除してリロードする。ポップアップの「保存した翻訳をすべて削除」で全ページ分を一括削除できる。
+- **API キー管理**: ツールバーの拡張機能アイコンをクリックして開くポップアップから DeepL API キーを登録する。Free プラン（キー末尾 `:fx`）/ Pro プランの両方に対応し、キーに応じて `api-free.deepl.com` / `api.deepl.com` を自動で使い分ける。
+- **通知**: エラー等の通知はページ右上の toast 表示で行う（`alert` / `confirm` は不使用）。
 
 ## Chrome 拡張の基礎知識
 
@@ -47,7 +48,7 @@ graph TB
 
     CS <-->|"メッセージパッシング<br/>(utils/messages.ts の型)"| BG
     BG -->|"fetch (POST /v2/translate)"| DeepL
-    CS <--> Storage
+    CS <-->|"翻訳データのみ<br/>（API キーは読まない）"| Storage
     BG <--> Storage
     Popup -->|"API キー保存"| Storage
 ```
@@ -71,19 +72,23 @@ sequenceDiagram
     User->>CS: 要素にホバー
     Note over CS: 要素を青枠でハイライト
     User->>CS: 右クリック
-    CS->>ST: deeplApiKey を確認
+    CS->>BG: { action: 'check-api-key' }
+    BG->>ST: deeplApiKey の有無を確認
+    BG-->>CS: { hasApiKey: true }
     CS->>BG: { action: 'translate', html: 要素のHTML }
     BG->>ST: deeplApiKey を取得
     BG->>API: POST /v2/translate<br/>(target_lang: JA, tag_handling: html)
     API-->>BG: 翻訳された HTML
     BG-->>CS: { success: true, translatedText }
-    Note over CS: 要素の innerHTML を<br/>翻訳結果で置換
+    Note over CS: DOMPurify でサニタイズ後、<br/>要素の innerHTML を翻訳結果で置換
     CS->>ST: 翻訳結果を保存<br/>(key: deepl_translations_<URL>)
 ```
 
 ポイント:
 
 - Content Script は CORS の制約で DeepL API を直接呼べないため、background にメッセージで依頼する。
+- API キーは background だけが読む。全サイトに注入される Content Script からはキーの「有無」しか確認できない（`check-api-key` メッセージ）。
+- API から返る HTML は `innerHTML` に反映する前に [DOMPurify](https://github.com/cure53/DOMPurify) でサニタイズする（保存済み翻訳の復元時も同様）。
 - `tag_handling: 'html'` を指定して HTML ごと翻訳させることで、リンクや装飾タグの構造を保ったまま翻訳できる。
 - 保存時は要素を特定するための **CSS セレクタ**（`#id` や `div.class:nth-of-type(2) > p` のようなパス）をキーとして生成する（`generateSelector()`）。
 
@@ -127,6 +132,8 @@ deepl_translations_<ページURL>: {
 }
 ```
 
+`timestamp` から 30 日を過ぎたエントリは、ページ再訪問時の復元処理で自動的に削除される。
+
 ## ディレクトリ構成
 
 WXT では `entrypoints/` 配下のファイル名・ディレクトリ名がそのまま拡張機能のコンポーネントとして認識される（`manifest.json` への登録は WXT が自動で行う）。
@@ -139,8 +146,13 @@ WXT では `entrypoints/` 配下のファイル名・ディレクトリ名がそ
 │       ├── index.html
 │       ├── main.ts
 │       └── style.css
+├── public/
+│   └── icon-{16,32,48,128}.png  # 拡張機能アイコン（WXT が manifest に自動登録）
 ├── utils/
 │   └── messages.ts        # コンポーネント間メッセージの型定義・ストレージキー生成
+├── docs/
+│   └── STORE_LISTING.md   # Chrome ウェブストア提出用の下書き・チェックリスト
+├── PRIVACY.md             # プライバシーポリシー（ストア提出時に URL 登録が必要）
 ├── wxt.config.ts          # manifest の設定（permissions・ショートカットキーなど）
 └── package.json
 ```
@@ -171,7 +183,10 @@ pnpm compile        # 型チェックのみ（tsc --noEmit）
 | 権限 | 用途 |
 |---|---|
 | `storage` | API キー・翻訳結果の保存 |
-| `activeTab` | ショートカット押下時にアクティブタブへメッセージ送信 |
+| `activeTab` | ショートカット押下時のアクティブタブへのメッセージ送信と、コンテキストメニュー操作時の `tab.url` の取得 |
 | `contextMenus` | 「翻訳を解消する」メニューの追加 |
-| `scripting` | スクリプト注入 |
-| `host_permissions: https://api.deepl.com/*` | Background からの DeepL API 呼び出し |
+| `host_permissions: https://api.deepl.com/*`<br>`https://api-free.deepl.com/*` | Background からの DeepL API 呼び出し（Pro / Free プラン） |
+
+## ストア公開
+
+Chrome ウェブストアへの提出手順・掲載文の下書き・パーミッションの正当性説明は [docs/STORE_LISTING.md](docs/STORE_LISTING.md) にまとめている。提出用 zip は `pnpm zip` で `.output/` に生成される。
