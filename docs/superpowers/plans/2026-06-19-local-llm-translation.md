@@ -307,8 +307,7 @@ export type Message =
 
 ```ts
 export type LocalTranslateResponse =
-  | { success: true; segments: string[] }
-  | { success: false; error: string };
+  { success: true; segments: string[] } | { success: false; error: string };
 
 // content → background へローカル翻訳を依頼する。応答が無い場合は既存挙動と同じエラーを投げる。
 export async function requestLocalTranslation(
@@ -316,8 +315,7 @@ export async function requestLocalTranslation(
 ): Promise<LocalTranslateResponse> {
   const message: Message = { action: 'translate-local', segments };
   const response = (await chrome.runtime.sendMessage(message)) as
-    | LocalTranslateResponse
-    | undefined;
+    LocalTranslateResponse | undefined;
   if (!response) {
     throw new Error('翻訳サービスからの応答がありません');
   }
@@ -362,10 +360,7 @@ Create `src/types/chrome-ai.d.ts`:
 // 公式 d.ts が無いため、本拡張で使う範囲のみ宣言する。
 
 type AICapabilityAvailability =
-  | 'unavailable'
-  | 'downloadable'
-  | 'downloading'
-  | 'available';
+  'unavailable' | 'downloadable' | 'downloading' | 'available';
 
 interface LanguageDetectionResult {
   detectedLanguage: string;

@@ -79,12 +79,10 @@ src/
 ```typescript
 // shared/messages.ts
 export type Message =
-  | { action: 'translate'; html: string }
-  | { action: 'toggle-hover-mode' };
+  { action: 'translate'; html: string } | { action: 'toggle-hover-mode' };
 
 export type TranslateResponse =
-  | { success: true; translatedText: string }
-  | { success: false; error: string };
+  { success: true; translatedText: string } | { success: false; error: string };
 ```
 
 - `action` の打ち間違いはコンパイルエラーになる。

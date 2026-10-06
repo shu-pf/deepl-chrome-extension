@@ -2,10 +2,7 @@
 // 公式 d.ts が無いため、本拡張で使う範囲のみ宣言する。
 
 type AICapabilityAvailability =
-  | 'unavailable'
-  | 'downloadable'
-  | 'downloading'
-  | 'available';
+  'unavailable' | 'downloadable' | 'downloading' | 'available';
 
 interface LanguageDetectionResult {
   detectedLanguage: string;
