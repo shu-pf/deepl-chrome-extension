@@ -205,12 +205,17 @@
       }
       .footer {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
+        flex-direction: column;
+        gap: 6px;
         padding: 12px 16px;
         border-top: 1px solid var(--border);
         font-size: 12px;
         color: var(--muted-foreground);
+      }
+      .shortcut-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
       }
       kbd {
         display: inline-flex;
@@ -285,8 +290,14 @@
     </main>
 
     <footer class="footer">
-      <span>翻訳モードの切り替え</span>
-      <kbd id="shortcut">⌘ ⇧ L</kbd>
+      <div class="shortcut-row">
+        <span>翻訳モードの切り替え</span>
+        <kbd data-command="toggle-hover-mode">⌘ ⇧ L</kbd>
+      </div>
+      <div class="shortcut-row">
+        <span>このページの翻訳を解消</span>
+        <kbd data-command="clear-translations">⌘ ⇧ K</kbd>
+      </div>
     </footer>
 
     <script type="module" src="./main.ts"></script>

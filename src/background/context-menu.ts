@@ -1,4 +1,4 @@
-import { clearTranslations } from '../shared/storage';
+import { clearTabTranslations } from './clear-translations';
 
 const CLEAR_TRANSLATIONS_ID = 'clear-translations';
 
@@ -17,8 +17,5 @@ export async function handleContextMenuClick(
   tab?: chrome.tabs.Tab,
 ): Promise<void> {
   if (info.menuItemId !== CLEAR_TRANSLATIONS_ID) return;
-  if (!tab?.id || !tab.url) return;
-
-  await clearTranslations(tab.url);
-  await chrome.tabs.reload(tab.id);
+  await clearTabTranslations(tab);
 }

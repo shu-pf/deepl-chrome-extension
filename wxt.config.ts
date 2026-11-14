@@ -22,6 +22,10 @@ export default defineConfig({
         suggested_key: { default: 'Ctrl+Shift+L', mac: 'Command+Shift+L' },
         description: '翻訳モードを有効化/無効化',
       },
+      'clear-translations': {
+        suggested_key: { default: 'Ctrl+Shift+K', mac: 'Command+Shift+K' },
+        description: '表示中のページの翻訳を解消する',
+      },
     },
   },
 });

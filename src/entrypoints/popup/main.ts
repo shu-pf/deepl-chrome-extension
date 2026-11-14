@@ -17,10 +17,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const apiKeyInput = document.getElementById('apiKey') as HTMLInputElement;
   const saveButton = document.getElementById('saveButton') as HTMLButtonElement;
   const statusDiv = document.getElementById('status') as HTMLDivElement;
-  const shortcut = document.getElementById('shortcut') as HTMLElement;
-
-  if (!navigator.userAgent.includes('Mac')) {
-    shortcut.textContent = 'Ctrl ⇧ L';
+  // ユーザーが chrome://extensions/shortcuts で変えた場合や、他と衝突して
+  // 未割り当てになった場合もあるので、実際の割り当てを表示する。
+  const commands = await chrome.commands.getAll();
+  for (const kbd of document.querySelectorAll<HTMLElement>(
+    'kbd[data-command]',
+  )) {
+    const command = commands.find((c) => c.name === kbd.dataset.command);
+    kbd.textContent = command?.shortcut || '未設定';
   }
 
   let statusTimer: ReturnType<typeof setTimeout> | undefined;

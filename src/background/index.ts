@@ -1,6 +1,7 @@
 import type { Message, TranslateResponse } from '../shared/messages';
 import { getApiKey } from '../shared/storage';
 import { translateText } from './deepl';
+import { clearTabTranslations } from './clear-translations';
 import { createContextMenu, handleContextMenuClick } from './context-menu';
 
 export function registerBackground(): void {
@@ -37,16 +38,19 @@ export function registerBackground(): void {
     },
   );
 
-  // ショートカット → アクティブタブへ toggle メッセージ
-  chrome.commands.onCommand.addListener((command) => {
-    if (command !== 'toggle-hover-mode') return;
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const tabId = tabs[0]?.id;
-      if (tabId !== undefined) {
-        const message: Message = { action: 'toggle-hover-mode' };
-        chrome.tabs.sendMessage(tabId, message);
-      }
-    });
+  // ショートカット
+  chrome.commands.onCommand.addListener((command, tab) => {
+    if (command === 'toggle-hover-mode') {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const tabId = tabs[0]?.id;
+        if (tabId !== undefined) {
+          const message: Message = { action: 'toggle-hover-mode' };
+          chrome.tabs.sendMessage(tabId, message);
+        }
+      });
+    } else if (command === 'clear-translations') {
+      void clearTabTranslations(tab);
+    }
   });
 
   // コンテキストメニュー
