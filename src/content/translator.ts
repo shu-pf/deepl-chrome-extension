@@ -58,13 +58,15 @@ export async function translateElement(element: HTMLElement): Promise<boolean> {
 }
 
 async function translateDeepL(element: HTMLElement): Promise<void> {
-  const html = element.outerHTML;
-  const response = await requestTranslation(html);
+  // 結果は innerHTML に書き戻すので、送るのも中身だけにする。
+  // outerHTML を送ると要素が自分自身の中に入れ子になり、リストなどのレイアウトが崩れる。
+  const originalHtml = element.outerHTML;
+  const response = await requestTranslation(element.innerHTML);
   if (!response.success) {
     throw new Error(response.error || '不明なエラー');
   }
-  applyTranslation(element, response.translatedText, html);
-  await saveTranslation(element, response.translatedText, html);
+  applyTranslation(element, response.translatedText, originalHtml);
+  await saveTranslation(element, response.translatedText, originalHtml);
 }
 
 async function translateLocal(element: HTMLElement): Promise<void> {

@@ -64,3 +64,26 @@ describe('translateElement (deepl provider)', () => {
     expect(requestSpy).not.toHaveBeenCalled();
   });
 });
+
+describe('translateElement (deepl provider) layout', () => {
+  it('does not nest the element inside itself (list stays one level)', async () => {
+    await setTranslationProvider('deepl');
+    await chrome.storage.local.set({ deeplApiKey: 'key' });
+    const requestSpy = vi
+      .spyOn(messages, 'requestTranslation')
+      .mockImplementation(async (html) => ({
+        success: true,
+        translatedText: html.replace('One', '一').replace('Two', '二'),
+      }));
+
+    const root = mountElement('<ul><li>One</li><li>Two</li></ul>');
+    const ul = root.querySelector('ul')!;
+    await translateElement(ul);
+
+    expect(requestSpy).toHaveBeenCalledWith('<li>One</li><li>Two</li>');
+    expect(root.innerHTML.startsWith('<ul')).toBe(true);
+    expect(ul.querySelector('ul')).toBeNull();
+    expect(ul.querySelectorAll('li')).toHaveLength(2);
+    expect(ul.textContent).toBe('一二');
+  });
+});
