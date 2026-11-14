@@ -5,128 +5,290 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hover Translate の設定</title>
     <style>
+      /* shadcn/ui の zinc テーマに合わせた色。ダークモードにも対応する。 */
+      :root {
+        --background: #ffffff;
+        --foreground: #09090b;
+        --muted: #f4f4f5;
+        --muted-foreground: #71717a;
+        --border: #e4e4e7;
+        --ring: #a1a1aa;
+        --primary: #18181b;
+        --primary-foreground: #fafafa;
+        --success: #16a34a;
+        --destructive: #dc2626;
+        --radius: 8px;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --background: #09090b;
+          --foreground: #fafafa;
+          --muted: #27272a;
+          --muted-foreground: #a1a1aa;
+          --border: #27272a;
+          --ring: #52525b;
+          --primary: #fafafa;
+          --primary-foreground: #18181b;
+          --success: #4ade80;
+          --destructive: #f87171;
+          color-scheme: dark;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
       body {
-        width: 400px;
-        padding: 20px;
-        font-family:
-          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
-          Cantarell, sans-serif;
+        width: 340px;
+        margin: 0;
+        background: var(--background);
+        color: var(--foreground);
+        font:
+          13px/1.5 -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          'Hiragino Sans',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      p {
         margin: 0;
       }
-      h1 {
-        font-size: 18px;
-        margin: 0 0 20px 0;
-        color: #333;
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
       }
-      .form-group {
-        margin-bottom: 15px;
+      .header img {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
       }
-      label {
-        display: block;
-        margin-bottom: 5px;
+      .title {
         font-size: 14px;
-        color: #666;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .subtitle {
+        font-size: 12px;
+        color: var(--muted-foreground);
+      }
+      .content {
+        display: grid;
+        gap: 16px;
+        padding: 16px;
+      }
+      .field {
+        display: grid;
+        gap: 8px;
+      }
+      .label {
+        font-size: 13px;
         font-weight: 500;
       }
-      input[type='text'],
-      input[type='password'] {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-        box-sizing: border-box;
+      .hint {
+        font-size: 12px;
+        color: var(--muted-foreground);
       }
-      input[type='text']:focus,
-      input[type='password']:focus {
-        outline: none;
-        border-color: #0066cc;
+      .tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        padding: 3px;
+        border-radius: var(--radius);
+        background: var(--muted);
       }
-      select {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-        box-sizing: border-box;
-        background: white;
+      .tabs input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
       }
-      button {
-        background-color: #0066cc;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 4px;
-        font-size: 14px;
+      .tabs label {
+        padding: 6px 8px;
+        border-radius: 6px;
+        text-align: center;
+        font-weight: 500;
+        color: var(--muted-foreground);
         cursor: pointer;
+        transition:
+          background 0.15s,
+          color 0.15s,
+          box-shadow 0.15s;
+      }
+      .tabs input:checked + label {
+        background: var(--background);
+        color: var(--foreground);
+        box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+      }
+      .tabs input:focus-visible + label {
+        outline: 2px solid var(--ring);
+        outline-offset: 1px;
+      }
+      .input {
         width: 100%;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        transition: box-shadow 0.15s;
+      }
+      .input::placeholder {
+        color: var(--muted-foreground);
+      }
+      .input:focus-visible {
+        outline: none;
+        border-color: var(--ring);
+        box-shadow: 0 0 0 3px rgb(161 161 170 / 0.3);
+      }
+      .button {
+        height: 36px;
+        border: none;
+        border-radius: var(--radius);
+        background: var(--primary);
+        color: var(--primary-foreground);
+        font: inherit;
         font-weight: 500;
+        cursor: pointer;
+        transition: opacity 0.15s;
       }
-      button:hover {
-        background-color: #0052a3;
+      .button:hover {
+        opacity: 0.9;
       }
-      button:disabled {
-        background-color: #ccc;
+      .button:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+      }
+      .button:disabled {
+        opacity: 0.5;
         cursor: not-allowed;
       }
       .status {
-        margin-top: 10px;
-        padding: 8px;
-        border-radius: 4px;
-        font-size: 12px;
         display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 12px;
       }
-      .status.success {
-        background-color: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
+      .status::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex: none;
+      }
+      .status.success::before {
+        background: var(--success);
       }
       .status.error {
-        background-color: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
+        color: var(--destructive);
       }
-      .info {
+      .status.error::before {
+        background: var(--destructive);
+      }
+      .local-info {
+        display: grid;
+        gap: 4px;
+        padding: 12px;
+        border-radius: var(--radius);
+        background: var(--muted);
         font-size: 12px;
-        color: #666;
-        margin-top: 10px;
-        line-height: 1.5;
+        color: var(--muted-foreground);
+      }
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--muted-foreground);
+      }
+      kbd {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 1px 6px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--muted);
+        font:
+          500 11px/1.6 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+        color: var(--foreground);
       }
     </style>
   </head>
   <body>
-    <h1>Hover Translate の設定</h1>
-    <div class="form-group">
-      <label for="provider">翻訳エンジン</label>
-      <select id="provider">
-        <option value="deepl">DeepL API</option>
-        <option value="local">ローカル翻訳（Chrome 組込み・無料）</option>
-      </select>
-    </div>
-    <div class="form-group" id="deeplSettings">
-      <label for="apiKey">DeepL APIキー（Free / Pro）</label>
-      <input
-        type="password"
-        id="apiKey"
-        placeholder="DeepL APIキーを入力してください"
-      />
-    </div>
-    <div class="info" id="localInfo" style="display: none">
-      <p>Chrome 138 以降が必要です。初回はモデルのダウンロードが発生します。</p>
-      <p>翻訳は端末内で行われ、外部サーバーには送信されません（無料）。</p>
-    </div>
-    <button id="saveButton">保存</button>
-    <div id="status" class="status"></div>
-    <div class="info">
-      <p>
-        DeepL を使うときは、DeepL API のキー（無料版・Pro
-        版のどちらでも可）が必要です。
-      </p>
-      <p>
-        ショートカット: Ctrl+Shift+L (Mac: Command+Shift+L)
-        で翻訳モードを有効化できます。
-      </p>
-    </div>
+    <header class="header">
+      <img src="/icon-48.png" alt="" />
+      <div>
+        <p class="title">Hover Translate</p>
+        <p class="subtitle">段落を指して、右クリックで日本語に</p>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="field">
+        <span class="label">翻訳エンジン</span>
+        <div class="tabs" role="radiogroup" aria-label="翻訳エンジン">
+          <input
+            type="radio"
+            name="provider"
+            id="providerDeepl"
+            value="deepl"
+          />
+          <label for="providerDeepl">DeepL</label>
+          <input
+            type="radio"
+            name="provider"
+            id="providerLocal"
+            value="local"
+          />
+          <label for="providerLocal">端末内</label>
+        </div>
+      </div>
+
+      <div class="field" id="deeplSettings">
+        <label class="label" for="apiKey">DeepL API キー</label>
+        <input
+          class="input"
+          type="password"
+          id="apiKey"
+          placeholder="xxxxxxxx-xxxx-…:fx"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <p class="hint">無料版と Pro 版のどちらのキーも使えます。</p>
+      </div>
+
+      <div class="local-info" id="localInfo" hidden>
+        <p>
+          Chrome
+          に組み込まれた翻訳を使います。無料で、文章は外部に送られません。
+        </p>
+        <p>Chrome 138 以降が必要です。初回はモデルのダウンロードがあります。</p>
+      </div>
+
+      <button class="button" id="saveButton">保存</button>
+      <div class="status" id="status" role="status"></div>
+    </main>
+
+    <footer class="footer">
+      <span>翻訳モードの切り替え</span>
+      <kbd id="shortcut">⌘ ⇧ L</kbd>
+    </footer>
+
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

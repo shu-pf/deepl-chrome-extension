@@ -28,9 +28,14 @@ export function disableHoverMode(): void {
   document.body.style.cursor = '';
 
   if (hoveredElement) {
-    hoveredElement.style.outline = '';
+    clearHighlight(hoveredElement);
     hoveredElement = null;
   }
+}
+
+function clearHighlight(element: HTMLElement): void {
+  element.style.outline = '';
+  element.style.outlineOffset = '';
 }
 
 function handleEscKey(e: KeyboardEvent): void {
@@ -47,15 +52,16 @@ function handleMouseOver(e: MouseEvent): void {
   if (element === document.body || element === document.documentElement) return;
 
   hoveredElement = element;
-  element.style.outline = '2px solid #0066cc';
-  element.style.outlineOffset = '2px';
+  // 明るいページでも暗いページでも見える中間の灰色にする。
+  element.style.outline = '2px solid #71717a';
+  element.style.outlineOffset = '3px';
 }
 
 function handleMouseOut(e: MouseEvent): void {
   if (!hoverModeEnabled) return;
   const element = e.target as HTMLElement;
   if (element === hoveredElement) {
-    element.style.outline = '';
+    clearHighlight(element);
   }
 }
 
