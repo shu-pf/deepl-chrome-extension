@@ -1,8 +1,15 @@
+// DeepL の無料版キーは末尾が ":fx" で、Pro 版とは API のホストが違う。
+function endpointFor(apiKey: string): string {
+  return apiKey.endsWith(':fx')
+    ? 'https://api-free.deepl.com/v2/translate'
+    : 'https://api.deepl.com/v2/translate';
+}
+
 export async function translateText(
   html: string,
   apiKey: string,
 ): Promise<string> {
-  const response = await fetch('https://api.deepl.com/v2/translate', {
+  const response = await fetch(endpointFor(apiKey), {
     method: 'POST',
     headers: {
       Authorization: `DeepL-Auth-Key ${apiKey}`,

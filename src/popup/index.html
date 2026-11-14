@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DeepL API設定</title>
+    <title>Hover Translate の設定</title>
     <style>
       body {
         width: 400px;
@@ -95,7 +95,7 @@
     </style>
   </head>
   <body>
-    <h1>DeepL API設定</h1>
+    <h1>Hover Translate の設定</h1>
     <div class="form-group">
       <label for="provider">翻訳エンジン</label>
       <select id="provider">
@@ -104,7 +104,7 @@
       </select>
     </div>
     <div class="form-group" id="deeplSettings">
-      <label for="apiKey">APIキー（Pro版）</label>
+      <label for="apiKey">DeepL APIキー（Free / Pro）</label>
       <input
         type="password"
         id="apiKey"
@@ -118,7 +118,10 @@
     <button id="saveButton">保存</button>
     <div id="status" class="status"></div>
     <div class="info">
-      <p>DeepL API Pro版のAPIキーが必要です。</p>
+      <p>
+        DeepL を使うときは、DeepL API のキー（無料版・Pro
+        版のどちらでも可）が必要です。
+      </p>
       <p>
         ショートカット: Ctrl+Shift+L (Mac: Command+Shift+L)
         で翻訳モードを有効化できます。
