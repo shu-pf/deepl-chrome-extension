@@ -4,7 +4,7 @@ import {
   setApiKey,
   setTranslationProvider,
   type TranslationProvider,
-} from '../shared/storage';
+} from '../../shared/storage';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const providerSelect = document.getElementById(
