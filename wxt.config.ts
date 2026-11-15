@@ -9,7 +9,7 @@ export default defineConfig({
     description:
       'ページ上の段落やリストを指して右クリックするだけで、その部分を日本語に翻訳します。DeepL API (Free / Pro) と Chrome 組込みの翻訳に対応。',
     homepage_url: 'https://github.com/shu-pf/deepl-chrome-extension',
-    permissions: ['storage', 'activeTab', 'contextMenus'],
+    permissions: ['storage', 'activeTab', 'contextMenus', 'scripting'],
     host_permissions: [
       'https://api.deepl.com/*',
       'https://api-free.deepl.com/*',

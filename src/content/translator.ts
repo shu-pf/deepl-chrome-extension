@@ -1,6 +1,7 @@
 import { requestTranslation } from '../shared/messages';
 import { getApiKey, getTranslationProvider } from '../shared/storage';
 import { translateSegments } from './local-translator';
+import { splitEdgeDecorations } from './edge-decorations';
 import { applyTranslatedSegments, collectTextNodes } from './text-segments';
 import { applyTranslation, saveTranslation } from './translation-store';
 
@@ -61,12 +62,18 @@ async function translateDeepL(element: HTMLElement): Promise<void> {
   // 結果は innerHTML に書き戻すので、送るのも中身だけにする。
   // outerHTML を送ると要素が自分自身の中に入れ子になり、リストなどのレイアウトが崩れる。
   const originalHtml = element.outerHTML;
-  const response = await requestTranslation(element.innerHTML);
+  // 見出し末尾の "#" リンクなどは DeepL に渡すと別の語へ付け替わるので、前後に取り分けておく。
+  const { leading, body, trailing } = splitEdgeDecorations(element.innerHTML);
+  if (body.trim() === '') {
+    return;
+  }
+  const response = await requestTranslation(body);
   if (!response.success) {
     throw new Error(response.error || '不明なエラー');
   }
-  applyTranslation(element, response.translatedText, originalHtml);
-  await saveTranslation(element, response.translatedText, originalHtml);
+  const translatedHtml = leading + response.translatedText + trailing;
+  applyTranslation(element, translatedHtml, originalHtml);
+  await saveTranslation(element, translatedHtml, originalHtml);
 }
 
 async function translateLocal(element: HTMLElement): Promise<void> {

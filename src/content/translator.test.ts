@@ -86,4 +86,26 @@ describe('translateElement (deepl provider) layout', () => {
     expect(ul.querySelectorAll('li')).toHaveLength(2);
     expect(ul.textContent).toBe('一二');
   });
+
+  it('keeps a heading permalink ("#") at the end instead of sending it to DeepL', async () => {
+    await setTranslationProvider('deepl');
+    await chrome.storage.local.set({ deeplApiKey: 'key' });
+    const requestSpy = vi
+      .spyOn(messages, 'requestTranslation')
+      .mockResolvedValue({
+        success: true,
+        translatedText: 'その他のデータベース向けの実行',
+      });
+
+    const root = mountElement(
+      '<h1>Running for Other Databases<a class="headerlink" href="#x">#</a></h1>',
+    );
+    const h1 = root.querySelector('h1')!;
+    await translateElement(h1);
+
+    expect(requestSpy).toHaveBeenCalledWith('Running for Other Databases');
+    expect(h1.innerHTML).toBe(
+      'その他のデータベース向けの実行<a class="headerlink" href="#x">#</a>',
+    );
+  });
 });

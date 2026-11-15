@@ -3,6 +3,7 @@ import { getApiKey } from '../shared/storage';
 import { translateText } from './deepl';
 import { clearTabTranslations } from './clear-translations';
 import { createContextMenu, handleContextMenuClick } from './context-menu';
+import { toggleHoverModeInTab } from './hover-mode-toggle';
 
 export function registerBackground(): void {
   // translate メッセージ → DeepL 呼び出し
@@ -41,13 +42,10 @@ export function registerBackground(): void {
   // ショートカット
   chrome.commands.onCommand.addListener((command, tab) => {
     if (command === 'toggle-hover-mode') {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const tabId = tabs[0]?.id;
-        if (tabId !== undefined) {
-          const message: Message = { action: 'toggle-hover-mode' };
-          chrome.tabs.sendMessage(tabId, message);
-        }
-      });
+      const tabId = tab?.id;
+      if (tabId !== undefined) {
+        void toggleHoverModeInTab(tabId);
+      }
     } else if (command === 'clear-translations') {
       void clearTabTranslations(tab);
     }
